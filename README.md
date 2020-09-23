@@ -305,12 +305,6 @@ You'll need to add stylelint block to package.json in order to work.
 },
 ```
 
-#### Font Magician
-
-
-
-
-
 #### Autoprefixer
 
 And the most important plugin of all, Autoprefixer will add vendor prefixes to your CSS to make it compatible across browsers.
