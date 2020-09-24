@@ -12,10 +12,10 @@ header {
   display: flex;
   background-color: salmon;
   color: pink;
+  font-size: var(--font-size);
 
   &__header {
     color: red;
-    font-size: var(--font-size);
   }
 
   &__blockqoute {

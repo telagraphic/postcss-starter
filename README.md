@@ -171,7 +171,7 @@ module.exports = {
 }
 ```
 
-Simply add the plugin to the postcss.config.js file and postcss will process the plugins in the order you add them.
+
 Now lets add our postcss command:
 
 ```
@@ -359,7 +359,7 @@ It's also a good idea to re-run our css through the postcss commands to make sur
 "build:styles-unused": "purgecss -css css/styles.css --content html/pages/*.html --output css/styles.clean.css",
 ```
 
-This will remove the .page__blockqoute rule from the final style.css.  
+This will remove the .page__blockqoute rule from the final style.css.
 
 ### Minification
 
