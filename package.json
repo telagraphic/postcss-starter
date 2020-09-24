@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "styles:import": "node css/scripts/imports.js",
-    "styles:process": "postcss css/styles.compiled.css -o css/styles.css --config css/scripts/postcss.config.js",
+    "styles:process": "postcss css/styles.compiled.css -o css/styles.css",
     "dev:watch": "onchange 'css/styles' -- run-p styles:import styles:process",
     "dev:server": "browser-sync start --server --ss 'html/pages' --files 'css/**/*.css' --no-notify --no-open",
     "server": "run-p dev:watch dev:server",
@@ -31,6 +31,17 @@
       "stylelint-config-rational-order"
     ]
   },
+  "postcss": {
+    "plugins": {
+      "postcss-nested": {},
+      "postcss-mixins": {},
+      "postcss-preset-env": {},
+      "stylelint": {
+        "fix": "true"
+      },
+      "autoprefixer": {}
+    }
+  },
   "devDependencies": {
     "autoprefixer": "^9.0.0",
     "browser-sync": "^2.26.12",
@@ -41,6 +52,7 @@
     "postcss": "^7.0.34",
     "postcss-cli": "^8.0.0",
     "postcss-import": "^12.0.1",
+    "postcss-load-config": "^2.1.1",
     "postcss-mixins": "^6.0.0",
     "postcss-nested": "^4.0.0",
     "postcss-preset-env": "^6.7.0",

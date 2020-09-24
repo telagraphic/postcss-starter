@@ -10,24 +10,15 @@ cd globals && touch global.css && cd ..
 cd objects && touch object.css && cd ..
 cd pages && touch page.css && cd ..
 cd utilities && touch utility.css && cd ..
-
-
 cd ../..
-
 cd js && touch scripts.js && echo "console.log('scripts.js is working');" > scripts.js && cd ..
 cd html && mkdir -p {pages,templates}
 cd templates && mkdir -p {views,components}
 cd views && touch index.html
-
 cd ../../..
-
-pwd
-
 touch README.md
-
 npm init -y
-npm i -D postcss postcss-cli postcss-import postcss-preset-env purgecss critical stylelint stylelint-config-rational-order stylelint-config-standard cssnano autoprefixer browser-sync npm-run-all onchange
-
+npm i -D postcss postcss-cli postcss-load-config postcss-import postcss-preset-env purgecss critical stylelint stylelint-config-rational-order stylelint-config-standard cssnano autoprefixer browser-sync npm-run-all onchange
 git init
 touch .gitignore
 echo "node_modules/" > .gitignore

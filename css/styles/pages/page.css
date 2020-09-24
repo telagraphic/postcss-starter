@@ -1,5 +1,6 @@
 body {
   @mixin transition color, 2s, ease-in;
+  font-family: "Helvetica", sans-serif;
 }
 
 header {
@@ -10,7 +11,7 @@ header {
 
 .page {
   display: flex;
-  background-color: salmon;
+  background-color: orange;
   color: pink;
   font-size: var(--font-size);
 

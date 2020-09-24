@@ -30,46 +30,116 @@
         Plus some other cool postcss plugins.
       </p>
 
+      <p>
+        Check out the <a href="https://github.com/telagraphic/static-site-starter">static-site-starter</a> which combines the dev and build processes from
+        the previous post on <a href="https://github.com/telagraphic/posthtml-starter">posthtml</a> with the postcss setup that will follow.
+      </p>
+
       <h3>What is PostCSS</h3>
 
       <p>
-        In my my last post, I covered how to set up a simple static generator with posthtml.  This post will cover the postcss implementation.
-        I'll only cover setting up the css parts but check out [static site starter repo](https://github.com/telagraphic/static-site-starter) to see how both posthtml and postcss
-        are combined together.
-      </p>
-
-      <p>
-        PostCSS takes in CSS, turns it into an Abstract Syntax Tree which parses each rule and provides access to each property and value allowing you to analyze and perform transforms.
-        This is how Autoprefixer works.  It reads each property and provides cross-browser vendor prefixes based on [Can I Use](https://caniuse.com/).
+        PostCSS takes in CSS, turns it into an <b>Abstract Syntax Tree (AST)</b> which parses each rule and provides access to each property and value
+        allowing you to analyze and perform transforms on properties and values.
+        This is how Autoprefixer works.  It reads each property and provides cross-browser vendor prefixes based on <a href="https://caniuse.com/">Can I Use</a>.
         You can write your core css styles and not have to worry about covering every possible browser quirk.  It's called making development life better.
       </p>
 
       <p>
-        But you can also replace SASS language features and do tons more amazing things.  Let's get started.
+        PostCSS is not a CSS pre or post-processor, it's a javascript toolset that does whatever you can think of and program.
+        You can replicate many of the features of SASS and much more.
       </p>
 
       <h3>Motivation</h3>
 
       <p>
         There are lot of good articles showing how to use postcss plugins to recreate the features of SASS with sample code of the css.
-        There wasn't the corresponding javascript and connecting glue code that is required to make it work in a project.
-        I wanted to build from scratch, the installation process, setting up the project structure, configuring the package.json with dev and build workflows so that
+        There wasn't the corresponding javascript examples and connecting glue code that is required to make it work in a project.
+      </p>
+
+      <p>
+        I wanted to demonstrate setting up a 'simple' project from scratch, setting up the project structure, configuring the package.json with dev and build workflows so that
         you can see how it comes together.  This article will provide the steps to go from nothing to a working minimal static site workflow.
       </p>
 
       <p>
-        Check out the repo here to follow along or just follow the instructions that follow to build it up on your own.
+        You can follow the instructions below or <a href="https://github.com/telagraphic/postcss-starter">clone the repo</a>.
       </p>
 
       <h3>Setup</h3>
 
       <p>
-        Just like the last post, all of our scripting will be using NPM to run our dev and build processes.
-        But first, let's figure out our CSS structure.  There are many options and approaches, so please modify to your way of thinking.
+        Just like the last post, we'll be using NPM to run our dev and build processes.
+        I've created a bash script that will setup our project structure and install all <b>npm</b> packages.
+        Create a new folder and <b>cd</b> into and create a bash script called <b>setup.sh</b>.
+      </p>
+
+      <p>
+        Run <b>bash setup.sh</b> in your console.
+      </p>
+
+      <p>
+        <b>postcss-import</b> and <b>autoprefixer</b> require <b>postcss</b> version <b>7.0.34</b>
+        to run.  PostCSS 8 is currently being updated which causes the recent versions to fail.  Copy my <b>package.json</b>
+        and run <b>npm i</b> to install the older but working dependencies if you have problems.
+      </p>
+
+      <p>
+        The <b>-D</b> flag will install these as developer dependencies which are packages we use
+        for building the site instead of the site using these tools for functionality.
+      </p>
+
+      <p>
+        For our development workflow, we'll need browser-sync, npm-run-all and onchange.
+        I covered these tools in my <a href="https://www.telagraphic.com/npm-build-scripts">previous post</a>.
+      </p>
+
+    </section>
+
+    <section class="post__code-snippet">
+      <b>setup.sh</b>
+      <pre class="language-js">
+        <code class="language-js">
+          mkdir -p {css,html,js,img,fonts}
+          cd css && mkdir {styles,scripts}
+          cd scripts && touch imports.js critical.js postcss.config.js && cd ..
+          cd styles && mkdir {base,config,objects,globals,components,utilities,pages}
+          touch imports.css
+          cd base && touch defaults.css normalize.css typography.css && cd ..
+          cd components && touch component.css && cd ..
+          cd config && touch mixins.css functions.css variables.css && cd ..
+          cd globals && touch global.css && cd ..
+          cd objects && touch object.css && cd ..
+          cd pages && touch page.css && cd ..
+          cd utilities && touch utility.css && cd ..
+          cd ../..
+          cd js && touch scripts.js && echo "console.log('scripts.js is working');" > scripts.js && cd ..
+          cd html && mkdir -p {pages,templates}
+          cd templates && mkdir -p {views,components}
+          cd views && touch index.html
+          cd ../../..
+          touch README.md
+          npm init -y
+          npm i -D postcss postcss-cli postcss-load-config postcss-import postcss-preset-env purgecss critical stylelint stylelint-config-rational-order stylelint-config-standard cssnano autoprefixer browser-sync npm-run-all onchange
+          git init
+          touch .gitignore
+          echo "node_modules/" > .gitignore
+          echo "**/.DS_Store" > .gitignore
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <p>
+        The CSS structure includes a scripts folder which contains build files that PostCSS will need.
+        They are support files for the dev/build workflow and don't belong in <b>/js</b>.
       </p>
 
       <p>
         - css
+          - scripts
+            - critical.js
+            - imports.js
+            - postcss.config.js
           - styles
             - base
               - defaults.css
@@ -92,38 +162,30 @@
           - styles.css
           - imports.css
       </p>
-
-      <p>
-        I've noticed that postcss performs better when using a postcss.config.js file versus the configuration loading pattern within the package.json.
-        I will be using postcss plugins to do all of the pre/post-processing.  No SASS at all, which is why you don't see an .scss filenames.
-      </p>
-
-      <p>
-        Let's install those now.  The <b>-D</b> flag will install these as developer dependencies which are packages we use
-        for building the site instead of the site using these tools for functionality.
-      </p>
     </section>
-
-    <section class="post__code-snippet">
-      <pre class="language-js">
-        <code class="language-js">
-          npm i -D postcss postcss-cli postcss-import postcss-nested postcss-mixins postcss-preset-env purgecss stylelint critical stylelint-config-rational-order stylelint-config-standard cssnano autoprefixer
-        </code>
-      </pre>
-    </section>
-
 
     <section class="post__article">
       <p>
-        For our development workflow, we'll need browser-sync, npm-run-all and onchange.
-        I covered these tools in my previous post.
+        <a href=https://github.com/postcss/postcss-load-config"">postcss-load-config</a> allows several configurations including
+        setting up a <b>postcss</b> block in our package.json.
       </p>
     </section>
 
     <section class="post__code-snippet">
+      <b>package.json</b>
       <pre class="language-js">
         <code class="language-js">
-          npm i -D browser-sync npm-run-all onchange
+          "postcss": {
+            "plugins": {
+              "postcss-nested": {},
+              "postcss-mixins": {},
+              "postcss-preset-env": {},
+              "stylelint": {
+                "fix": "true"
+              },
+              "autoprefixer": {}
+            }
+          }
         </code>
       </pre>
     </section>
@@ -131,9 +193,11 @@
     <section class="post__article">
       <h3>Atom Editor</h3>
       <p>
-        When you start writing postcss in atom editor, you will not be using <b>.scss</b> filenames and the
-        <a href="https://atom.io/packages/language-postcss">language-postcss</a>
-        will provide syntax highlighting.  Super helpful.
+        You'll notice there are no <b>.scss</b> files, just plain ol' <b>.css</b>.
+        When you start writing postcss in atom editor, we'll need
+        <a href="https://atom.io/packages/language-postcss">language-postcss</a> to will provide syntax
+        highlighting for nesting, mixins and so on in our <b>.css</b> files.
+        Super helpful.
       </p>
     </section>
 
@@ -143,13 +207,10 @@
         A slighty tricky first step is importing our css files.  Without SASS imports we will use [postcss-import](https://github.com/postcss/postcss-import)
         which requires us to write some javascript code to process the imports but it is very straightforward.
       </p>
-
-      <p>
-        <b>css/styles/imports.css</b>
-      </p>
     </section>
 
     <section class="post__code-snippet">
+      <b>css/styles/imports.css</b>
       <pre class="language-css">
         <code class="language-css">
           @import 'config/functions.css';
@@ -170,9 +231,8 @@
     </section>
 
     <section class="post__article">
-      <h3>Imports</h3>
       <p>
-        Let's create our imports code at <b>css/scripts/imports.js</b>, which contains the following code:
+        Let's create our imports code at <b>css/scripts/imports.js</b>, and add the following code:
       </p>
     </section>
 
@@ -200,11 +260,15 @@
 
     <section class="post__article">
       <p>
-        To run this, add the below code to the package.json:
+        This is taken from the <a href="https://github.com/postcss/postcss-import#usage">github page</a> and simply writes a new css file with the
+        concatenated css from <b>css/styles/imports.css</b> and outputs to <b>css/styles.compiled.css</b>.
+        We'll use this file to pre-process in the next step.
+        To run this, add the below code to the <b>package.json</b>:
       </p>
     </section>
 
     <section class="post__code-snippet">
+      <b>package.json</b>
       <pre class="language-js">
         <code class="language-js">
           "styles:import": "node css/scripts/imports.js"
@@ -213,26 +277,20 @@
     </section>
 
     <section class="post__article">
-      <p>
-        This will concatenate all the css files in the imports.css file and output to <b>css/styles.compiled.css</b>.
-        We'll use this file to pre-process in the next step.
-      </p>
-    </section>
-
-    <section class="post__article">
       <h3>SASS-Like Pre-Processor</h3>
       <p>
         We can duplicate the powers of SASS with <a href="https://github.com/jonathantneal/precss">precss</a>, a package that allows for nesting, variables, mixins and more.
         This package has not been updated for about 2 years and the issues board has many open tickets that have not been resolved.
-        If you go down to the bottom of the github page, you'll see a list of the plugins used that we can install.
+        We won't be using <b>precss</b> and instead install individual packages.
       </p>
 
       <p>
-        And add our plugins to <b>css/scripts/postcss.config.js</b>:
+        Let's add our plugins to the config file:
       </p>
     </section>
 
     <section class="post__code-snippet">
+      <b>css/scripts/postcss.config.js</b>
       <pre class="language-js">
         <code class="language-js">
           module.exports = {
@@ -760,9 +818,8 @@
       </p>
 
       <p>
-        Check out the [static-site-starer]() which combines the dev and build processes from the [posthtml-starter]() with the postcss setup above.
+        Check out the [static-site-starter](https://github.com/telagraphic/static-site-starter) which combines the dev and build processes from the [posthtml-starter]() with the postcss setup above.
         Overall, the benefits of having a streamlined development workflow makes building things easier.
-        And just as important pushing a performant and lean site to users is
       </p>
     </section>
 

@@ -1,12 +1,9 @@
-body {
-  font-family: "Consolas";
-}
-
 :root {
   --font-size: 2.45rem;
 }
 
 body {
+  font-family: "Helvetica", sans-serif;
   -webkit-transition: color 2s ease-in;
   transition: color 2s ease-in;
 }
@@ -22,13 +19,13 @@ header {
   display: -ms-flexbox;
   display: flex;
   color: pink;
-  background-color: salmon;
+  font-size: 2.45rem;
+  font-size: var(--font-size);
+  background-color: orange;
 }
 
 .page__header {
   color: red;
-  font-size: 2.45rem;
-  font-size: var(--font-size);
 }
 
 .page__blockqoute {
