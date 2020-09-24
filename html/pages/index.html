@@ -13,17 +13,760 @@
 
 <body class="page">
 
-  <header class="page__header">
-    <h1>Home Page</h1>
-  </header>
-  <main class="page__main">
-    Hinting and Tidy
-  </main>
-  <footer class="page__footer"></footer>
+  <article class="post">
+    <section class="post__header">
+      <h2>PostCSS Static Site Starter</h2>
+      <time>9/2020</time>
+    </section>
+    <section class="post__banner">
+      <img src="img/postcss-logo.jpg" alt="PostCSS Logo">
+    </section>
+    <section class="post__article">
+      <h3>TL;DR</h3>
+      <p>
+        Setup a simple and basic 'static site generator' with postCSS plugins that covers creating your own SASS pre-processor,
+        importing files, linting and autoprefixer for development.
+        Build steps for removing unused css, minifying and then inlining critical css for above the fold to boost page load performance.
+        Plus some other cool postcss plugins.
+      </p>
+
+      <h3>What is PostCSS</h3>
+
+      <p>
+        In my my last post, I covered how to set up a simple static generator with posthtml.  This post will cover the postcss implementation.
+        I'll only cover setting up the css parts but check out [static site starter repo](https://github.com/telagraphic/static-site-starter) to see how both posthtml and postcss
+        are combined together.
+      </p>
+
+      <p>
+        PostCSS takes in CSS, turns it into an Abstract Syntax Tree which parses each rule and provides access to each property and value allowing you to analyze and perform transforms.
+        This is how Autoprefixer works.  It reads each property and provides cross-browser vendor prefixes based on [Can I Use](https://caniuse.com/).
+        You can write your core css styles and not have to worry about covering every possible browser quirk.  It's called making development life better.
+      </p>
+
+      <p>
+        But you can also replace SASS language features and do tons more amazing things.  Let's get started.
+      </p>
+
+      <h3>Motivation</h3>
+
+      <p>
+        There are lot of good articles showing how to use postcss plugins to recreate the features of SASS with sample code of the css.
+        There wasn't the corresponding javascript and connecting glue code that is required to make it work in a project.
+        I wanted to build from scratch, the installation process, setting up the project structure, configuring the package.json with dev and build workflows so that
+        you can see how it comes together.  This article will provide the steps to go from nothing to a working minimal static site workflow.
+      </p>
+
+      <p>
+        Check out the repo here to follow along or just follow the instructions that follow to build it up on your own.
+      </p>
+
+      <h3>Setup</h3>
+
+      <p>
+        Just like the last post, all of our scripting will be using NPM to run our dev and build processes.
+        But first, let's figure out our CSS structure.  There are many options and approaches, so please modify to your way of thinking.
+      </p>
+
+      <p>
+        - css
+          - styles
+            - base
+              - defaults.css
+              - normalize.css
+              - typography.css
+            - components
+              - components.css
+            - config
+              - functions.css
+              - mixins.css
+              - variables.css
+            - globals
+              - globals.css
+            - objects
+              - object.css
+            - pages
+              - page.css
+            - utilities
+              - utility.css
+          - styles.css
+          - imports.css
+      </p>
+
+      <p>
+        I've noticed that postcss performs better when using a postcss.config.js file versus the configuration loading pattern within the package.json.
+        I will be using postcss plugins to do all of the pre/post-processing.  No SASS at all, which is why you don't see an .scss filenames.
+      </p>
+
+      <p>
+        Let's install those now.  The <b>-D</b> flag will install these as developer dependencies which are packages we use
+        for building the site instead of the site using these tools for functionality.
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <pre class="language-js">
+        <code class="language-js">
+          npm i -D postcss postcss-cli postcss-import postcss-nested postcss-mixins postcss-preset-env purgecss stylelint critical stylelint-config-rational-order stylelint-config-standard cssnano autoprefixer
+        </code>
+      </pre>
+    </section>
 
 
-  <noscript>
-    <link rel="stylesheet" href="css/styles.css"></noscript>
+    <section class="post__article">
+      <p>
+        For our development workflow, we'll need browser-sync, npm-run-all and onchange.
+        I covered these tools in my previous post.
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <pre class="language-js">
+        <code class="language-js">
+          npm i -D browser-sync npm-run-all onchange
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <h3>Atom Editor</h3>
+      <p>
+        When you start writing postcss in atom editor, you will not be using <b>.scss</b> filenames and the
+        <a href="https://atom.io/packages/language-postcss">language-postcss</a>
+        will provide syntax highlighting.  Super helpful.
+      </p>
+    </section>
+
+    <section class="post__article">
+      <h3>Imports</h3>
+      <p>
+        A slighty tricky first step is importing our css files.  Without SASS imports we will use [postcss-import](https://github.com/postcss/postcss-import)
+        which requires us to write some javascript code to process the imports but it is very straightforward.
+      </p>
+
+      <p>
+        <b>css/styles/imports.css</b>
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <pre class="language-css">
+        <code class="language-css">
+          @import 'config/functions.css';
+          @import 'config/mixins.css';
+          @import 'config/variables.css';
+
+          @import 'base/normalize.css';
+          @import 'base/typography.css';
+          @import 'base/defaults.css';
+
+          @import 'components/component.css';
+          @import 'globals/global.css';
+          @import 'pages/page.css';
+          @import 'objects/object.css';
+          @import 'utilities/utility.css';
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <h3>Imports</h3>
+      <p>
+        Let's create our imports code at <b>css/scripts/imports.js</b>, which contains the following code:
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <pre class="language-js">
+        <code class="language-js">
+          var fs = require("fs");
+          var postcss = require("postcss");
+          var atImport = require("postcss-import");
+
+          var css = fs.readFileSync("css/styles/imports.css", "utf8");
+
+          postcss()
+            .use(atImport())
+            .process(css, {
+              from: "css/styles/imports.css",
+              to: "css/styles.compiled.css"
+            })
+            .then(function (result) {
+              fs.writeFileSync("css/styles.compiled.css", result.css);
+            })
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <p>
+        To run this, add the below code to the package.json:
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <pre class="language-js">
+        <code class="language-js">
+          "styles:import": "node css/scripts/imports.js"
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <p>
+        This will concatenate all the css files in the imports.css file and output to <b>css/styles.compiled.css</b>.
+        We'll use this file to pre-process in the next step.
+      </p>
+    </section>
+
+    <section class="post__article">
+      <h3>SASS-Like Pre-Processor</h3>
+      <p>
+        We can duplicate the powers of SASS with <a href="https://github.com/jonathantneal/precss">precss</a>, a package that allows for nesting, variables, mixins and more.
+        This package has not been updated for about 2 years and the issues board has many open tickets that have not been resolved.
+        If you go down to the bottom of the github page, you'll see a list of the plugins used that we can install.
+      </p>
+
+      <p>
+        And add our plugins to <b>css/scripts/postcss.config.js</b>:
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <pre class="language-js">
+        <code class="language-js">
+          module.exports = {
+            plugins: [
+              require('postcss-nested')({}),
+              require('postcss-mixins')({}),
+              require('postcss-preset-env')({}),
+              require('stylelint')({fix: true}),
+              require('autoprefixer')({})
+            ]
+          }
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <p>
+        Now lets add our postcss command and pass the config file to it.
+        The <b>css/styles.compiled.css</b> will now be run through our set of plugins and output to <b>css/styles.css</b>.
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <pre class="language-js">
+        <code class="language-js">
+          "styles:process": "postcss css/styles.compiled.css -o css/styles.css --config css/scripts/postcss.config.js",
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <h3>Nesting</h3>
+      <p>
+        It's a best practice to avoid nesting more than 3 levels.
+      </p>
+
+      <p>
+        <b>css/styles/pages/page.css</b>
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <pre class="language-css">
+        <code class="language-css">
+          .page {
+            display: flex;
+            background-color: salmon;
+            color: pink;
+
+            h1 {
+              color: red;
+            }
+          }
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <p>
+        Turns into plain CSS:
+      </p>
+
+      <p>
+        <b>css/styles.css</b>
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <pre class="language-css">
+        <code class="language-css">
+          .page {
+            display: flex;
+            background-color: salmon;
+            color: pink;
+          }
+
+          .page h1 {
+            color: red;
+          }
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <h3>Mixins</h3>
+      <p>
+        <a href="https://github.com/postcss/postcss-mixins">postcss-mixins</a> is actively maintained and gives us SASS-like mixins.
+        I define the mixins in the <b>css/styles/config/mixins.css</b> file and they can be used in other css files.
+      </p>
+
+      <p>
+        Just make the mixins.css is imported before other files that use them!
+      </p>
+
+      <p>
+        You can use @mixin-content to pass in rules that can be wrapped by a media query, just like SASS.
+      </p>
+
+      <p>
+        <b>css/styles/config/mixins.css</b>
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <pre class="language-css">
+        <code class="language-css">
+          @define-mixin transition $property: all, $time: 150ms, $easing: ease-out {
+            transition: $(property) $(time) $(easing);
+          }
+
+          @define-mixin viewport-min {
+            @media (min-width: 40rem) {
+              @mixin-content;
+            }
+          }
+        </code>
+      </pre>
+    </section>
+
+
+    <section class="post__article">
+      <h3>Mixins</h3>
+      <p>
+        <a href="https://github.com/postcss/postcss-mixins">postcss-mixins</a> is actively maintained and gives us SASS-like mixins.
+        I define the mixins in the <b>css/styles/config/mixins.css</b> file and they can be used in other css files.
+      </p>
+
+      <p>
+        Just make the mixins.css is imported before other files that use them!
+      </p>
+
+      <p>
+        You can use @mixin-content to pass in rules that can be wrapped by a media query, just like SASS.
+      </p>
+
+      <p>
+        <b>css/styles/config/mixins.css</b>
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <pre class="language-css">
+        <code class="language-css">
+          @define-mixin transition $property: all, $time: 150ms, $easing: ease-out {
+            transition: $(property) $(time) $(easing);
+          }
+
+          @define-mixin viewport-min {
+            @media (min-width: 40rem) {
+              @mixin-content;
+            }
+          }
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <p>
+        Use mixins:
+      </p>
+
+    </section>
+
+    <section class="post__code-snippet">
+      <b>css/styles/pages/page.css</b>
+      <pre class="language-css">
+        <code class="language-css">
+          body {
+            @mixin transition color, 2s, ease-in;
+          }
+
+          header {
+            @mixin viewport-min {
+              background-color: red;
+            }
+          }
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <p>
+        Now becomes:
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <b>css/styles.css</b>
+      <pre class="language-css">
+        <code class="language-css">
+          body {
+            transition: color 2s ease-in;
+          }
+
+          header {
+            @media (min-width: 40rem) {
+              background-color: red;
+            }
+          }
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <h3>Future CSS</h3>
+      <p>
+        <a href="https://github.com/csstools/postcss-preset-env">postcss-preset-env</a> contains a bunch of features
+        for using modern css into current code that browsers
+        can use.  Here is a list of what it <a href="https://preset-env.cssdb.org/features">supports</a>.
+
+        It's great for using custom properties which is something that SASS has problems with.
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <b>css/styles/globals/global.css</b>
+      <pre class="language-css">
+        <code class="language-css">
+          :root {
+            --font-size: 2.45rem;
+          }
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__code-snippet">
+      <b>css/styles/globals/global.css</b>
+      <pre class="language-css">
+        <code class="language-css">
+          .page {
+            display: flex;
+            background-color: salmon;
+            color: pink;
+            font-size: var(--font-size);
+          }
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <p>
+        Now becomes:
+      </p>
+    </section>
+
+
+    <section class="post__code-snippet">
+      <b>css/styles.css</b>
+      <pre class="language-css">
+        <code class="language-css">
+          .page {
+            display: flex;
+            color: pink;
+            background-color: salmon;
+            font-size: var(--font-size);
+          }
+        </code>
+      </pre>
+    </section>
+
+
+    <section class="post__article">
+      <h3>Stylelinting</h3>
+      <p>
+        <a href="https://github.com/stylelint/stylelint">stylelint</a> will lint our CSS and make fixes to our new output CSS.
+        I'll be adding <a href="https://github.com/stylelint/stylelint-config-standard">stylelint-config-standard</a> and <a href="https://github.com/constverum/stylelint-config-rational-order">stylelint-config-rational-order</a>.
+      </p>
+
+      <p>
+        <b>stylelint-config-rational-order</b> will group our properties by:
+      </p>
+
+      <p>
+        - Positioning
+        - Box Model
+        - Typography
+        - Visual
+        - Animation
+        - Misc
+      </p>
+
+      <p>
+        You could also use the atom package <a href="https://github.com/lysyi3m/atom-postcss-sorting">postcss-sorting</a> to resort on save.
+        I already write my styles according to the above template, but this could help those who don't know where properties belong.
+      </p>
+
+      <p>
+        You'll need to add stylelint block to package.json in order to work.
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <b>css/styles/globals/global.css</b>
+      <pre class="language-css">
+        <code class="language-css">
+          "stylelint": {
+            "extends": [
+              "stylelint-config-standard",
+              "stylelint-config-rational-order"
+            ]
+          },
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <p>
+        We pass the <b>fix: true</b> flag to the stylelint plugin and it will automatically make fixes to our
+        styles.
+      </p>
+
+    </section>
+
+    <section class="post__code-snippet">
+      <b>css/scripts/postcss.config.css</b>
+      <pre class="language-css">
+        <code class="language-css">
+          require('stylelint')({fix: true})
+        </code>
+      </pre>
+    </section>
+
+
+    <section class="post__article">
+      <h3>Autoprefixer</h3>
+      <p>
+        And the most important plugin of all, Autoprefixer will add vendor prefixes to your CSS to make it compatible across browsers.
+        This allows us the ability to write our core css without having to lookup all the quirks and arcane patches for certain browsers.
+      </p>
+
+      <p>
+        This is added the end of the plugin list and you will need to use a <a href="https://github.com/browserslist/browserslist">Browserlist</a> configuration to work.
+        Read the documentation to make the best selection of browswer support, I will be going with one of the recommended defaults.
+      </p>
+
+      <p>
+        Add this to our package.json:
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <b>package.json</b>
+      <pre class="language-js">
+        <code class="language-js">
+          "browserslist": [
+            "last 2 versions"
+          ],
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <p>
+        Now our CSS will contain prefixes for flexbox and other properties:
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <b>css/styles.css</b>
+      <pre class="language-css">
+        <code class="language-css">
+          .page {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            background-color: salmon;
+            color: pink;
+          }
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <h3>Build Process</h3>
+      <p>
+        We have a good development workflow going and now it's time to publish our site.  There are many modifications and performance tweaks
+        we can apply.
+      </p>
+
+      <p>
+        - removed unused css
+        - minify css
+        - inline above the fold critical css
+      </p>
+
+      <p>
+        We'll add build setup step that removes old files and creates a new one for each build run.
+        It's also a good idea to re-run our css through the postcss commands to make sure they have compiled correctly.
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <b>package.json</b>
+      <pre class="language-js">
+        <code class="language-js">
+          "build:clean": "rm -rf dist",
+          "build:dist": "mkdir -p dist/{css,js,img,fonts/web}",
+          "build:styles-compile": "run-s styles:import styles:process",
+        </code>
+      </pre>
+    </section>
+
+
+    <section class="post__article">
+      <h3>Remove Unused Styles</h3>
+      <p>
+        <a href="https://purgecss.com/">PurgeCSS</a> will remove unused CSS to keep our final file as small as possible.
+      </p>
+
+      <p>
+        The <b>--content</b> flag will go through all the html pages we have to create the new CSS.
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <b>package.json</b>
+      <pre class="language-js">
+        <code class="language-js">
+          "build:styles-unused": "purgecss -css css/styles.css --content html/pages/*.html --output css/styles.clean.css",
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <h3>Minify</h3>
+      <p>
+        <a href="https://github.com/cssnano/cssnano">CSSNano</a> will minify our css, removing whitespace which saves space and cut's file size down.
+        This will be saved to the /dist/css folder.
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <b>package.json</b>
+      <pre class="language-js">
+        <code class="language-js">
+          "build:styles-minify": "postcss css/styles.clean.css > dist/css/styles.css --use cssnano"
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <h3>Inline Critical Styles</h3>
+      <p>
+        Our CSS is almost ready.  We will use <a href="https://github.com/addyosmani/critical">critical</a> to
+        inline above the fold styles directly into the head of our index.html.  This will improve our page speed when users visit our site.
+        You could apply this to other pages too if need be.
+      </p>
+    </section>
+
+    <section class="post__article">
+      <p>
+        There are many examples on the github repo.  We'll need to run this code to run critical.
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <b>css/scripts/critical.js</b>
+      <pre class="language-js">
+        <code class="language-js">
+          var critical = require('critical');
+
+          critical.generate({
+              inline: true,
+              base: 'dist',
+              src: 'index.html',
+              target: {
+                html: 'index.html'
+              },
+              minify: true,
+              dimensions: [
+                {
+                  width: 320,
+                  height: 480
+                },
+                {
+                  width: 2000,
+                  height: 1000
+                }
+              ]
+          });
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__code-snippet">
+      <b>package.json</b>
+      <pre class="language-js">
+        <code class="language-js">
+          "build:styles-critical": "node css/scripts/critical.js"
+        </code>
+      </pre>
+    </section>
+
+
+    <section class="post__article">
+      <p>
+        Take a look at the inlined styles in the <b>style</b> tag.  Very cool!
+      </p>
+      <p>
+        Critical also applies this strange syntax for our css.
+      </p>
+    </section>
+
+    <section class="post__code-snippet">
+      <b>dist/index.html</b>
+      <pre class="language-html">
+        <code class="language-html">
+          <link rel="stylesheet" href="css/styles.css" media="print" onload="this.media='all'">
+        </code>
+      </pre>
+    </section>
+
+    <section class="post__article">
+      <p>
+        This will <a href="https://www.filamentgroup.com/lab/load-css-simpler/">asynchronsouly load</a> the CSS increasing page render performance.
+      </p>
+    </section>
+
+    <section class="post__article">
+      <h3>
+        All Done
+      </h3>
+      <p>
+        That's it.
+      </p>
+
+      <p>
+        Check out the [static-site-starer]() which combines the dev and build processes from the [posthtml-starter]() with the postcss setup above.
+        Overall, the benefits of having a streamlined development workflow makes building things easier.
+        And just as important pushing a performant and lean site to users is
+      </p>
+    </section>
+
+  </article>
 
 </body>
 <script src="js/scripts.js"></script>
